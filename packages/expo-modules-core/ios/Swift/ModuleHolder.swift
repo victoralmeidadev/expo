@@ -102,7 +102,9 @@ public final class ModuleHolder {
       return nil
     }
     log.info("Creating JS object for module '\(name)'")
-    return definition.build(inRuntime: runtime)
+    let javaScriptObject = definition.build(inRuntime: runtime)
+    module.javaScriptObject = javaScriptObject
+    return javaScriptObject
   }
 
   // MARK: Listening to native events
