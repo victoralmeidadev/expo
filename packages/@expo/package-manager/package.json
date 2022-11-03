@@ -52,7 +52,8 @@
     "@types/rimraf": "^3.0.0",
     "@types/split": "^1.0.0",
     "@types/js-yaml": "^3.12.5",
-    "@types/micromatch": "^4.0.2"
+    "@types/micromatch": "^4.0.2",
+    "rimraf": "^3.0.2"
   },
   "publishConfig": {
     "access": "public"
