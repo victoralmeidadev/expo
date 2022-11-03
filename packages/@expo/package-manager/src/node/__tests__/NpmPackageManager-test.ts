@@ -21,11 +21,11 @@ describe('NpmPackageManager', () => {
     expect(npm.name).toBe('npm');
   });
 
-  it('uses process.env by default', () => {
+  it('uses process.env by default', async () => {
     process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
 
     const npm = new NpmPackageManager({ cwd: projectRoot });
-    npm.installAsync();
+    await npm.installAsync();
     expect(mockedSpawnAsync).toHaveBeenCalledWith(
       'npm',
       ['install'],
@@ -37,11 +37,11 @@ describe('NpmPackageManager', () => {
     delete process.env['TEST_CUSTOM_ENV_VAR'];
   });
 
-  it('does not use process.env when undefined', () => {
+  it('does not use process.env when undefined', async () => {
     process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
 
-    const npm = new NpmPackageManager({ cwd: projectRoot, env: undefined });
-    npm.installAsync();
+    const npm = new NpmPackageManager({ cwd: projectRoot, env: {} });
+    await npm.installAsync();
     expect(mockedSpawnAsync).toHaveBeenCalledWith(
       'npm',
       ['install'],

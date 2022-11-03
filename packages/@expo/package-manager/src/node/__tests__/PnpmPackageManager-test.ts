@@ -25,11 +25,11 @@ describe('PnpmPackageManager', () => {
     expect(pnpm.name).toBe('pnpm');
   });
 
-  it('uses process.env by default', () => {
+  it('uses process.env by default', async () => {
     process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
 
     const pnpm = new PnpmPackageManager({ cwd: projectRoot });
-    pnpm.installAsync();
+    await pnpm.installAsync();
     expect(mockedSpawnAsync).toHaveBeenCalledWith(
       'pnpm',
       ['install'],
@@ -41,11 +41,11 @@ describe('PnpmPackageManager', () => {
     delete process.env['TEST_CUSTOM_ENV_VAR'];
   });
 
-  it('does not use process.env when undefined', () => {
+  it('does not use process.env when overridden', async () => {
     process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
 
-    const pnpm = new PnpmPackageManager({ cwd: projectRoot, env: undefined });
-    pnpm.installAsync();
+    const pnpm = new PnpmPackageManager({ cwd: projectRoot, env: {} });
+    await pnpm.installAsync();
     expect(mockedSpawnAsync).toHaveBeenCalledWith(
       'pnpm',
       ['install'],

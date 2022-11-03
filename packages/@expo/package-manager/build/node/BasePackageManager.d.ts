@@ -12,7 +12,10 @@ export declare abstract class BasePackageManager implements PackageManager {
     abstract readonly bin: string;
     /** Get the lockfile for this package manager */
     abstract readonly lockFile: string;
-    /** Get the default environment variables used when running the package manager */
+    /**
+     * Get the default environment variables used when running the package manager.
+     * Note, these keys can't be overridden by providing the `env` option.
+     */
     protected getDefaultEnvironment(): Record<string, string>;
     abstract addAsync(namesOrFlags: string[]): SpawnPromise<SpawnResult> | PendingSpawnPromise<SpawnResult>;
     abstract addDevAsync(namesOrFlags: string[]): SpawnPromise<SpawnResult> | PendingSpawnPromise<SpawnResult>;

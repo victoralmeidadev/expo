@@ -21,13 +21,13 @@ describe('YarnPackageManager', () => {
     expect(yarn.name).toBe('yarn');
   });
 
-  it('uses process.env by default', () => {
+  it('uses process.env by default', async () => {
     process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
 
     const yarn = new YarnPackageManager({ cwd: projectRoot });
-    yarn.installAsync();
+    await yarn.installAsync();
     expect(mockedSpawnAsync).toHaveBeenCalledWith(
-      'yarn',
+      'yarnpkg',
       ['install'],
       expect.objectContaining({
         env: expect.objectContaining({ TEST_CUSTOM_ENV_VAR: 'true' }),
@@ -37,13 +37,13 @@ describe('YarnPackageManager', () => {
     delete process.env['TEST_CUSTOM_ENV_VAR'];
   });
 
-  it('does not use process.env when undefined', () => {
+  it('does not use process.env when overridden', async () => {
     process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
 
-    const yarn = new YarnPackageManager({ cwd: projectRoot, env: undefined });
-    yarn.installAsync();
+    const yarn = new YarnPackageManager({ cwd: projectRoot, env: {} });
+    await yarn.installAsync();
     expect(mockedSpawnAsync).toHaveBeenCalledWith(
-      'yarn',
+      'yarnpkg',
       ['install'],
       expect.objectContaining({
         env: expect.not.objectContaining({ TEST_CUSTOM_ENV_VAR: 'true' }),

@@ -12,10 +12,10 @@ export abstract class BasePackageManager implements PackageManager {
   readonly log?: (...args: any) => void;
   readonly options: PackageManagerOptions;
 
-  constructor({ silent, log, env, ...options }: PackageManagerOptions = { env: process.env }) {
+  constructor({ silent, log, env = process.env, ...options }: PackageManagerOptions = {}) {
     this.silent = !!silent;
     this.log = log ?? (!silent ? console.log : undefined);
-    this.options = { ...options, env: { ...this.getDefaultEnvironment(), ...env } };
+    this.options = { ...options, env: { ...env, ...this.getDefaultEnvironment() } };
   }
 
   /** Get the name of the package manager */
@@ -25,7 +25,10 @@ export abstract class BasePackageManager implements PackageManager {
   /** Get the lockfile for this package manager */
   abstract readonly lockFile: string;
 
-  /** Get the default environment variables used when running the package manager */
+  /**
+   * Get the default environment variables used when running the package manager.
+   * Note, these keys can't be overridden by providing the `env` option.
+   */
   protected getDefaultEnvironment(): Record<string, string> {
     return {
       ADBLOCK: '1',

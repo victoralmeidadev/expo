@@ -10,12 +10,15 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const rimraf_1 = __importDefault(require("rimraf"));
 class BasePackageManager {
-    constructor({ silent, log, env, ...options } = { env: process.env }) {
+    constructor({ silent, log, env = process.env, ...options } = {}) {
         this.silent = !!silent;
         this.log = log ?? (!silent ? console.log : undefined);
-        this.options = { ...options, env: { ...this.getDefaultEnvironment(), ...env } };
+        this.options = { ...options, env: { ...env, ...this.getDefaultEnvironment() } };
     }
-    /** Get the default environment variables used when running the package manager */
+    /**
+     * Get the default environment variables used when running the package manager.
+     * Note, these keys can't be overridden by providing the `env` option.
+     */
     getDefaultEnvironment() {
         return {
             ADBLOCK: '1',
