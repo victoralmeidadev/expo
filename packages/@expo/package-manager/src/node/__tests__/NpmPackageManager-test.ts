@@ -21,6 +21,38 @@ describe('NpmPackageManager', () => {
     expect(npm.name).toBe('npm');
   });
 
+  it('uses process.env by default', () => {
+    process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
+
+    const npm = new NpmPackageManager({ cwd: projectRoot });
+    npm.installAsync();
+    expect(mockedSpawnAsync).toHaveBeenCalledWith(
+      'npm',
+      ['install'],
+      expect.objectContaining({
+        env: expect.objectContaining({ TEST_CUSTOM_ENV_VAR: 'true' }),
+      })
+    );
+
+    delete process.env['TEST_CUSTOM_ENV_VAR'];
+  });
+
+  it('does not use process.env when undefined', () => {
+    process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
+
+    const npm = new NpmPackageManager({ cwd: projectRoot, env: undefined });
+    npm.installAsync();
+    expect(mockedSpawnAsync).toHaveBeenCalledWith(
+      'npm',
+      ['install'],
+      expect.objectContaining({
+        env: expect.not.objectContaining({ TEST_CUSTOM_ENV_VAR: 'true' }),
+      })
+    );
+
+    delete process.env['TEST_CUSTOM_ENV_VAR'];
+  });
+
   describe('runAsync', () => {
     it('logs executed command', async () => {
       const log = jest.fn();

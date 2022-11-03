@@ -25,6 +25,55 @@ describe('PnpmPackageManager', () => {
     expect(pnpm.name).toBe('pnpm');
   });
 
+  it('uses process.env by default', () => {
+    process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
+
+    const pnpm = new PnpmPackageManager({ cwd: projectRoot });
+    pnpm.installAsync();
+    expect(mockedSpawnAsync).toHaveBeenCalledWith(
+      'pnpm',
+      ['install'],
+      expect.objectContaining({
+        env: expect.objectContaining({ TEST_CUSTOM_ENV_VAR: 'true' }),
+      })
+    );
+
+    delete process.env['TEST_CUSTOM_ENV_VAR'];
+  });
+
+  it('does not use process.env when undefined', () => {
+    process.env['TEST_CUSTOM_ENV_VAR'] = 'true';
+
+    const pnpm = new PnpmPackageManager({ cwd: projectRoot, env: undefined });
+    pnpm.installAsync();
+    expect(mockedSpawnAsync).toHaveBeenCalledWith(
+      'pnpm',
+      ['install'],
+      expect.objectContaining({
+        env: expect.not.objectContaining({ TEST_CUSTOM_ENV_VAR: 'true' }),
+      })
+    );
+
+    delete process.env['TEST_CUSTOM_ENV_VAR'];
+  });
+
+  it('uses NODE_ENV=development even when undefined', () => {
+    const originalEnv = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'production';
+
+    const pnpm = new PnpmPackageManager({ cwd: projectRoot, env: undefined });
+    pnpm.installAsync();
+    expect(mockedSpawnAsync).toHaveBeenCalledWith(
+      'pnpm',
+      ['install'],
+      expect.objectContaining({
+        env: expect.objectContaining({ NODE_ENV: 'development' }),
+      })
+    );
+
+    process.env['NODE_ENV'] = originalEnv;
+  });
+
   describe('runAsync', () => {
     it('logs executed command', async () => {
       const log = jest.fn();
