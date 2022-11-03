@@ -57,23 +57,6 @@ describe('PnpmPackageManager', () => {
     delete process.env['TEST_CUSTOM_ENV_VAR'];
   });
 
-  it('uses NODE_ENV=development even when undefined', () => {
-    const originalEnv = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'production';
-
-    const pnpm = new PnpmPackageManager({ cwd: projectRoot, env: undefined });
-    pnpm.installAsync();
-    expect(mockedSpawnAsync).toHaveBeenCalledWith(
-      'pnpm',
-      ['install'],
-      expect.objectContaining({
-        env: expect.objectContaining({ NODE_ENV: 'development' }),
-      })
-    );
-
-    process.env['NODE_ENV'] = originalEnv;
-  });
-
   describe('runAsync', () => {
     it('logs executed command', async () => {
       const log = jest.fn();

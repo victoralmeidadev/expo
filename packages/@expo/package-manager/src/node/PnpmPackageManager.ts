@@ -7,14 +7,6 @@ export class PnpmPackageManager extends BasePackageManager {
   readonly bin = 'pnpm';
   readonly lockFile = PNPM_LOCK_FILE;
 
-  protected getDefaultEnvironment(): Record<string, string> {
-    return {
-      ...super.getDefaultEnvironment(),
-      // Force pnpm to install `devDependencies`, even in production environments
-      NODE_ENV: 'development',
-    };
-  }
-
   workspaceRoot() {
     const root = findPnpmWorkspaceRoot(this.ensureCwdDefined('workspaceRoot'));
     if (root) {
