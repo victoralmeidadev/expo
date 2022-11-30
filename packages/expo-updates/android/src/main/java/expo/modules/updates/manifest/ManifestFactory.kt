@@ -21,7 +21,7 @@ object ManifestFactory {
         LegacyUpdateManifest.fromLegacyManifest(LegacyManifest(manifestJson), configuration!!)
       }
       0, 1 -> {
-        NewUpdateManifest.fromNewManifest(NewManifest(manifestJson), responseHeaderData, extensions, configuration!!)
+        NewUpdateManifest.fromNewManifest(NewManifest(manifestJson), extensions, configuration!!)
       }
       else -> {
         throw Exception("Unsupported expo-protocol-version: $expoProtocolVersion")

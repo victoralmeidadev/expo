@@ -366,14 +366,16 @@ class UpdatesController private constructor(
           override fun onUpdateResponseLoaded(updateResponse: UpdateResponse): Loader.OnUpdateResponseLoadedResult {
             val updateMessage = updateResponse.messageUpdateResponsePart?.updateMessage
             if (updateMessage != null) {
-              return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = when (updateMessage) {
-                is UpdateMessage.RollbackToEmbeddedUpdateMessage -> false
-                is UpdateMessage.NoUpdateAvailableUpdateMessage -> false
-              })
+              return Loader.OnUpdateResponseLoadedResult(
+                shouldDownloadManifestIfPresentInResponse = when (updateMessage) {
+                  is UpdateMessage.RollbackToEmbeddedUpdateMessage -> false
+                  is UpdateMessage.NoUpdateAvailableUpdateMessage -> false
+                }
+              )
             }
 
             val updateManifest = updateResponse.manifestUpdateResponsePart?.updateManifest ?: return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = false)
-            return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = selectionPolicy.shouldLoadNewUpdate(updateManifest.updateEntity, launchedUpdate, updateManifest.manifestFilters))
+            return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = selectionPolicy.shouldLoadNewUpdate(updateManifest.updateEntity, launchedUpdate, updateResponse.responseHeaderData?.manifestFilters))
           }
         })
       }

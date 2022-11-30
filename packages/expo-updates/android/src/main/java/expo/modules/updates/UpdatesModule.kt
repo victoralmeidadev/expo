@@ -10,11 +10,9 @@ import expo.modules.core.ModuleRegistryDelegate
 import expo.modules.core.Promise
 import expo.modules.core.interfaces.ExpoMethod
 import expo.modules.updates.db.entity.AssetEntity
-import expo.modules.updates.db.entity.UpdateEntity
 import expo.modules.updates.launcher.Launcher.LauncherCallback
 import expo.modules.updates.loader.*
 import expo.modules.updates.loader.FileDownloader.RemoteUpdateDownloadCallback
-import expo.modules.updates.manifest.UpdateManifest
 import expo.modules.updates.logging.UpdatesErrorCode
 import expo.modules.updates.logging.UpdatesLogEntry
 import expo.modules.updates.logging.UpdatesLogReader
@@ -190,7 +188,7 @@ class UpdatesModule(
             if (updatesServiceLocal.selectionPolicy.shouldLoadNewUpdate(
                 updateManifest.updateEntity,
                 launchedUpdate,
-                updateManifest.manifestFilters
+                updateResponse.responseHeaderData?.manifestFilters
               )
             ) {
               updateInfo.putBoolean("isAvailable", true)
@@ -250,19 +248,23 @@ class UpdatesModule(
               override fun onUpdateResponseLoaded(updateResponse: UpdateResponse): Loader.OnUpdateResponseLoadedResult {
                 val updateMessage = updateResponse.messageUpdateResponsePart?.updateMessage
                 if (updateMessage != null) {
-                  return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = when (updateMessage) {
-                    is UpdateMessage.RollbackToEmbeddedUpdateMessage -> false
-                    is UpdateMessage.NoUpdateAvailableUpdateMessage -> false
-                  })
+                  return Loader.OnUpdateResponseLoadedResult(
+                    shouldDownloadManifestIfPresentInResponse = when (updateMessage) {
+                      is UpdateMessage.RollbackToEmbeddedUpdateMessage -> false
+                      is UpdateMessage.NoUpdateAvailableUpdateMessage -> false
+                    }
+                  )
                 }
 
                 val updateManifest = updateResponse.manifestUpdateResponsePart?.updateManifest ?: return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = false)
 
-                return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = updatesServiceLocal.selectionPolicy.shouldLoadNewUpdate(
-                  updateManifest.updateEntity,
-                  updatesServiceLocal.launchedUpdate,
-                  updateManifest.manifestFilters
-                ))
+                return Loader.OnUpdateResponseLoadedResult(
+                  shouldDownloadManifestIfPresentInResponse = updatesServiceLocal.selectionPolicy.shouldLoadNewUpdate(
+                    updateManifest.updateEntity,
+                    updatesServiceLocal.launchedUpdate,
+                    updateResponse.responseHeaderData?.manifestFilters
+                  )
+                )
               }
 
               override fun onSuccess(loaderResult: Loader.LoaderResult) {

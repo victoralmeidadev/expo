@@ -54,7 +54,7 @@ class UpdateManifestFactoryTest {
   fun testGetManifest_UnsupportedProtocolVersion() {
     getManifest(
       JSONObject(newManifestJson),
-      ResponseHeaderData(protocolVersion = "1"),
+      ResponseHeaderData(protocolVersion = "100"),
       null,
       createConfig()
     )

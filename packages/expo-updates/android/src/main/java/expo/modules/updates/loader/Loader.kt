@@ -143,7 +143,7 @@ abstract class Loader protected constructor(
       return
     }
 
-    // store the header data no matter if a manifest was included in the response
+    // store the header data even if only a message was included in the response
     updateResponse!!.responseHeaderData?.let {
       ManifestMetadata.saveMetadata(it, database, configuration)
     }
@@ -152,9 +152,10 @@ abstract class Loader protected constructor(
 
     callback!!.onSuccess(
       LoaderResult(
-      updateEntity = this.updateEntity,
-      updateMessage = updateMessage
-    ))
+        updateEntity = this.updateEntity,
+        updateMessage = updateMessage
+      )
+    )
     reset()
   }
 

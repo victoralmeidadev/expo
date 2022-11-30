@@ -53,9 +53,18 @@ declare type UpdateCheckResultFailure = {
     manifest: undefined;
 };
 /**
+ * The rollback to embedded result of checking for a new update.
+ */
+declare type UpdateCheckResultRollbackToEmbedded = {
+    /**
+     * Signifies that the app is already running the latest available update.
+     */
+    isRollbackToEmbedded: true;
+};
+/**
  * The result of checking for a new update.
  */
-export declare type UpdateCheckResult = UpdateCheckResultSuccess | UpdateCheckResultFailure;
+export declare type UpdateCheckResult = UpdateCheckResultSuccess | UpdateCheckResultFailure | UpdateCheckResultRollbackToEmbedded;
 /**
  * The successful result of fetching a new update.
  */
@@ -84,9 +93,18 @@ declare type UpdateFetchResultFailure = {
     manifest: undefined;
 };
 /**
+ * The rollback to embedded result of fetching a new update.
+ */
+declare type UpdateFetchResultRollbackToEmbedded = {
+    /**
+     * Signifies that the app is already running the latest available update.
+     */
+    isRollbackToEmbedded: true;
+};
+/**
  * The result of fetching a new update.
  */
-export declare type UpdateFetchResult = UpdateFetchResultSuccess | UpdateFetchResultFailure;
+export declare type UpdateFetchResult = UpdateFetchResultSuccess | UpdateFetchResultFailure | UpdateFetchResultRollbackToEmbedded;
 /**
  * An object that is passed into each event listener when an auto-update check occurs.
  */

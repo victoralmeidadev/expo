@@ -111,8 +111,8 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
 
       val responseHeaderData = ResponseHeaderData(
         protocolVersion = responseHeaders["expo-protocol-version"],
-        manifestFilters = responseHeaders["expo-manifest-filters"],
-        serverDefinedHeaders = responseHeaders["expo-server-defined-headers"],
+        manifestFiltersRaw = responseHeaders["expo-manifest-filters"],
+        serverDefinedHeadersRaw = responseHeaders["expo-server-defined-headers"],
         manifestSignature = responseHeaders["expo-manifest-signature"]
       )
 
@@ -135,11 +135,13 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
           }
 
           override fun onSuccess(manifestUpdateResponsePart: UpdateResponsePart.ManifestUpdateResponsePart) {
-            callback.onSuccess(UpdateResponse(
-              responseHeaderData = responseHeaderData,
-              manifestUpdateResponsePart = manifestUpdateResponsePart,
-              messageUpdateResponsePart = null
-            ))
+            callback.onSuccess(
+              UpdateResponse(
+                responseHeaderData = responseHeaderData,
+                manifestUpdateResponsePart = manifestUpdateResponsePart,
+                messageUpdateResponsePart = null
+              )
+            )
           }
         }
       )
@@ -225,8 +227,8 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
     val responseHeaders = response.headers
     val responseHeaderData = ResponseHeaderData(
       protocolVersion = responseHeaders["expo-protocol-version"],
-      manifestFilters = responseHeaders["expo-manifest-filters"],
-      serverDefinedHeaders = responseHeaders["expo-server-defined-headers"],
+      manifestFiltersRaw = responseHeaders["expo-manifest-filters"],
+      serverDefinedHeadersRaw = responseHeaders["expo-server-defined-headers"],
       manifestSignature = responseHeaders["expo-manifest-signature"],
     )
 
@@ -254,17 +256,21 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
     var parseMessageResponse: UpdateResponsePart.MessageUpdateResponsePart? = null
     var didError = false
 
+    // need to parse the message and manifest in parallel, to do so use this common callback.
+    // would be a great place to have better coroutine stuff
     val maybeFinish = {
       if (!didError) {
         val isManifestDone = manifestResponseInfo == null || parseManifestResponse != null
         val isMessageDone = messageResponseInfo == null || parseMessageResponse != null
 
         if (isManifestDone && isMessageDone) {
-          callback.onSuccess(UpdateResponse(
-            responseHeaderData = responseHeaderData,
-            manifestUpdateResponsePart = parseManifestResponse,
-            messageUpdateResponsePart = parseMessageResponse
-          ))
+          callback.onSuccess(
+            UpdateResponse(
+              responseHeaderData = responseHeaderData,
+              manifestUpdateResponsePart = parseManifestResponse,
+              messageUpdateResponsePart = parseMessageResponse
+            )
+          )
         }
       }
     }
@@ -286,7 +292,6 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
             parseMessageResponse = messageUpdateResponsePart
             maybeFinish()
           }
-
         }
       )
     }
@@ -329,10 +334,10 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
 
       // check code signing if code signing is configured
       // 1. verify the code signing signature (throw if invalid)
-      // 2. then, if the code signing certificate is only valid for a particular project, verify that the manifest
+      // 2. then, if the code signing certificate is only valid for a particular project, verify that the message
       //    has the correct info for code signing. If the code signing certificate doesn't specify a particular
       //    project, it is assumed to be valid for all projects
-      // 3. mark the manifest as verified if both of these pass
+      // 3. consider the message verified if both of these pass
       try {
         configuration.codeSigningConfiguration?.let { codeSigningConfiguration ->
           val signatureValidationResult = codeSigningConfiguration.validateSignature(
@@ -425,16 +430,16 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
               if (isValid) {
                 try {
                   checkCodeSigningAndCreateManifest(
-                    manifestResponseInfo.body,
-                    preManifest,
-                    manifestResponseInfo.responseHeaderData,
-                    manifestResponseInfo.responsePartHeaderData,
-                    extensions,
-                    certificateChainFromManifestResponse,
-                    true,
-                    configuration,
-                    logger,
-                    callback
+                    bodyString = manifestResponseInfo.body,
+                    preManifest = preManifest,
+                    responseHeaderData = manifestResponseInfo.responseHeaderData,
+                    responsePartHeaderData = manifestResponseInfo.responsePartHeaderData,
+                    extensions = extensions,
+                    certificateChainFromManifestResponse = certificateChainFromManifestResponse,
+                    isVerified = true,
+                    configuration = configuration,
+                    logger = logger,
+                    callback = callback
                   )
                 } catch (e: Exception) {
                   callback.onFailure("Failed to parse manifest data", e)
@@ -452,16 +457,16 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
         )
       } else {
         checkCodeSigningAndCreateManifest(
-          manifestResponseInfo.body,
-          preManifest,
-          manifestResponseInfo.responseHeaderData,
-          manifestResponseInfo.responsePartHeaderData,
-          extensions,
-          certificateChainFromManifestResponse,
-          false,
-          configuration,
-          logger,
-          callback
+          bodyString = manifestResponseInfo.body,
+          preManifest = preManifest,
+          responseHeaderData = manifestResponseInfo.responseHeaderData,
+          responsePartHeaderData = manifestResponseInfo.responsePartHeaderData,
+          extensions = extensions,
+          certificateChainFromManifestResponse = certificateChainFromManifestResponse,
+          isVerified = false,
+          configuration = configuration,
+          logger = logger,
+          callback = callback
         )
       }
     } catch (e: Exception) {
@@ -650,7 +655,7 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
       }
 
       val updateManifest = ManifestFactory.getManifest(preManifest, responseHeaderData, extensions, configuration)
-      if (!SelectionPolicies.matchesFilters(updateManifest.updateEntity!!, updateManifest.manifestFilters)) {
+      if (!SelectionPolicies.matchesFilters(updateManifest.updateEntity!!, responseHeaderData.manifestFilters)) {
         val message =
           "Downloaded manifest is invalid; provides filters that do not match its content"
         callback.onFailure(message, Exception(message))
@@ -712,6 +717,7 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
         .url(assetEntity.url!!.toString())
         .addHeadersFromJSONObject(assetEntity.extraRequestHeaders)
         .header("Expo-Platform", "android")
+        .header("Expo-Protocol-Version", "1")
         .header("Expo-API-Version", "1")
         .header("Expo-Updates-Environment", "BARE")
         .header("EAS-Client-ID", EASClientID(context).uuid.toString())
@@ -733,6 +739,7 @@ open class FileDownloader(context: Context, private val client: OkHttpClient) {
         .addHeadersFromJSONObject(extraHeaders)
         .header("Accept", "multipart/mixed,application/expo+json,application/json")
         .header("Expo-Platform", "android")
+        .header("Expo-Protocol-Version", "1")
         .header("Expo-API-Version", "1")
         .header("Expo-Updates-Environment", "BARE")
         .header("Expo-JSON-Error", "true")

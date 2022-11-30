@@ -9,7 +9,6 @@ import expo.modules.updates.loader.Loader
 import expo.modules.updates.loader.RemoteLoader
 import expo.modules.updates.loader.UpdateMessage
 import expo.modules.updates.loader.UpdateResponse
-import expo.modules.updates.manifest.UpdateManifest
 import expo.modules.updates.selectionpolicy.LauncherSelectionPolicySingleUpdate
 import expo.modules.updates.selectionpolicy.ReaperSelectionPolicyDevelopmentClient
 import expo.modules.updates.selectionpolicy.SelectionPolicy
@@ -97,10 +96,12 @@ class UpdatesDevLauncherController : UpdatesInterface {
       override fun onUpdateResponseLoaded(updateResponse: UpdateResponse): Loader.OnUpdateResponseLoadedResult {
         val updateMessage = updateResponse.messageUpdateResponsePart?.updateMessage
         if (updateMessage != null) {
-          return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = when (updateMessage) {
-            is UpdateMessage.RollbackToEmbeddedUpdateMessage -> false
-            is UpdateMessage.NoUpdateAvailableUpdateMessage -> false
-          })
+          return Loader.OnUpdateResponseLoadedResult(
+            shouldDownloadManifestIfPresentInResponse = when (updateMessage) {
+              is UpdateMessage.RollbackToEmbeddedUpdateMessage -> false
+              is UpdateMessage.NoUpdateAvailableUpdateMessage -> false
+            }
+          )
         }
 
         val updateManifest = updateResponse.manifestUpdateResponsePart?.updateManifest ?: return Loader.OnUpdateResponseLoadedResult(shouldDownloadManifestIfPresentInResponse = false)

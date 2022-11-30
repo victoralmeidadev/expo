@@ -333,7 +333,7 @@ class LoaderTask(
             return if (selectionPolicy.shouldLoadNewUpdate(
                 updateManifest.updateEntity,
                 candidateLauncher?.launchedUpdate,
-                updateManifest.manifestFilters
+                updateResponse.responseHeaderData?.manifestFilters
               )
             ) {
               isUpToDate = false

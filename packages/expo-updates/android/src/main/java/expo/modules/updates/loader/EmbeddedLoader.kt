@@ -55,11 +55,13 @@ class EmbeddedLoader internal constructor(
   ) {
     val updateManifest = loaderFiles.readEmbeddedManifest(this.context, this.configuration)
     if (updateManifest != null) {
-      callback.onSuccess(UpdateResponse(
-        responseHeaderData = null,
-        manifestUpdateResponsePart = UpdateResponsePart.ManifestUpdateResponsePart(updateManifest),
-        messageUpdateResponsePart = null
-      ))
+      callback.onSuccess(
+        UpdateResponse(
+          responseHeaderData = null,
+          manifestUpdateResponsePart = UpdateResponsePart.ManifestUpdateResponsePart(updateManifest),
+          messageUpdateResponsePart = null
+        )
+      )
     } else {
       val message = "Embedded manifest is null"
       callback.onFailure(message, Exception(message))
