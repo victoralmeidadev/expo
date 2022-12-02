@@ -38,7 +38,7 @@ The following describes how a conformant Expo Updates client library MUST retrie
 1. The client library will make a [request](#update-request) for the most recent update, with constraints specified in the headers.
 2. If a new update is downloaded, the client library will process its parts:
     - For a _manifest_ part, the client library will proceed to make additional requests to download and store any missing assets specified in the manifest. This is considered a new _manifest_.
-    - For a _message_ part, the client library will consume the message depending on the message type and update the its local state accordingly.
+    - For a _message_ part, the client library will consume the message depending on the message type and update its local state accordingly.
 3. The client library will edit its local state to reflect that a new update has been added to the local cache. It will also update the local state with the new `expo-manifest-filters` and `expo-server-defined-headers` found in the response [headers](#manifest-response-headers).
 
 The primary consumers of this spec are Expo Application Services and organizations that wish to manage their own update server to satisfy internal requirements.
@@ -55,7 +55,7 @@ A conformant client library MUST make a GET request with the headers:
 3. `expo-runtime-version` MUST be a runtime version compatible with the client. A runtime version stipulates the native code setup a client is running. It should be set when the client is built. For example, in an iOS client, the value may be set in a plist file.
 4. Any headers stipulated by a previous responses' [server defined headers](#manifest-response-headers).
 
-A conformant client library MUST send at least one of `accept: application/expo+json`, `accept: application/json`, or `accept: multipart/mixed` based on the supported response structures though SHOULD send `accept: application/expo+json, application/json, multipart/mixed`. A conformant client library MAY express preference using "q" parameters as specified in [RFC 7231](https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.1), which default to `1`.
+A conformant client library MUST send at least one of `accept: application/expo+json`, `accept: application/json`, or `accept: multipart/mixed` based on the [supported response structures](#update-response) though SHOULD send `accept: application/expo+json, application/json, multipart/mixed`. A conformant client library MAY express preference using "q" parameters as specified in [RFC 7231](https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.1), which default to `1`.
 
 A conformant client library configured to perform [code signing](#code-signing) verification MUST send a `expo-expect-signature` header to indicate that it expects the conformant server to include the `expo-signature` header in the manifest response. `expo-expect-signature` is an [Expo SFV](expo-sfv-0.mdx) dictionary which MAY contain any of the following key value pairs:
 
