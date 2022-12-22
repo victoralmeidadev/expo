@@ -25,29 +25,31 @@ A conforming implementation of this protocol MAY provide additional functionalit
 
 Conforming servers and client libraries MUST follow the HTTP spec as described in [RFC 7231](https://tools.ietf.org/html/rfc7231) as well as the more precise guidance described in this spec.
 
-An _update_ is defined as one or both of the following:
-- a [_manifest_](#manifest-response) together with the assets referenced inside the manifest.
-- a [_directive_](#directive-response).
+- An _update_ is defined as a [_manifest_](#manifest-response) together with the assets referenced inside the manifest.
+- A [_directive_](#directive-response) is defined as a message from the server that instructs clients to perform an action.
 
-Expo Updates is a protocol for assembling and delivering updates to apps running on multiple platforms.
-
-An app running a conformant Expo Updates client library MUST load the most recent _manifest_ saved in the client library's cache possibly after filtering by the contents of the manifest's [_metadata_](#manifest-body).
-
-The following describes how a conformant Expo Updates client library MUST retrieve a new update from a conformant server:
-
-1. The client library will make a [request](#update-request) for the most recent update, with constraints specified in the headers.
-2. If a new update is downloaded, the client library will process its parts:
-    - For a _manifest_ part, the client library will proceed to make additional requests to download and store any missing assets specified in the manifest. This is considered a new _manifest_.
-    - For a _directive_ part, the client library will consume the directive depending on the directive type and update its local state accordingly.
-3. The client library will edit its local state to reflect that a new update has been added to the local cache. It will also update the local state with the new `expo-manifest-filters` and `expo-server-defined-headers` found in the response [headers](#manifest-response-headers).
+Expo Updates is a protocol for assembling and delivering updates and directives to clients.
 
 The primary consumers of this spec are Expo Application Services and organizations that wish to manage their own update server to satisfy internal requirements.
 
-## Update Request
+## Client
+
+> See the [reference client library](https://github.com/expo/expo/tree/main/packages/expo-updates).
+
+An app running a conformant Expo Updates client library MUST load the most recent _update_ saved in the client library's update database, possibly after filtering by the contents of the update's manifest [_metadata_](#manifest-body).
+
+The following describes how a conformant Expo Updates client library MUST retrieve a new update from a conformant server:
+
+1. The client library MUST make a [request](#request) for the most recent update and directive, with constraints specified in the headers.
+2. If a [response](#response) is received, the client library MUST process its contents:
+    - For a response containing an _update_, the client library SHALL proceed to make additional requests to download and store any new assets specified in the manifest. This is considered a new _update_. The client library will edit its local state to reflect that a new update has been added to the local cache. It will also update the local state with the new `expo-manifest-filters` and `expo-server-defined-headers` found in the response [headers](#manifest-response-headers).
+    - For a response containing a _directive_, the client library will consume the directive depending on the directive type and edit its local state accordingly.
+
+## Request
 
 A conformant client library MUST make a GET request with the headers:
 
-1. `expo-protocol-version: 1`, to specify version 1 of this expo-updates specicifcation.
+1. `expo-protocol-version: 1`, to specify version 1 of this expo-updates specification.
 2. `expo-platform`, to specify the platform type the client is running on.
    - iOS MUST be `expo-platform: ios`.
    - Android MUST be `expo-platform: android`.
@@ -55,7 +57,7 @@ A conformant client library MUST make a GET request with the headers:
 3. `expo-runtime-version` MUST be a runtime version compatible with the client. A runtime version stipulates the native code setup a client is running. It should be set when the client is built. For example, in an iOS client, the value may be set in a plist file.
 4. Any headers stipulated by a previous responses' [server defined headers](#manifest-response-headers).
 
-A conformant client library MUST send at least one of `accept: application/expo+json`, `accept: application/json`, or `accept: multipart/mixed` based on the [supported response structures](#update-response), though it SHOULD send `accept: application/expo+json, application/json, multipart/mixed`. A conformant client library MAY express preference using "q" parameters as specified in [RFC 7231](https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.1), which default to `1`.
+A conformant client library MAY send one of `accept: application/expo+json`, `accept: application/json`, or `accept: multipart/mixed` based on the [supported response structures](#response), though it SHOULD send `accept: application/expo+json, application/json, multipart/mixed`. A conformant client library MAY express preference using "q" parameters as specified in [RFC 7231](https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.1), which default to `1`.
 
 A conformant client library configured to perform [code signing](#code-signing) verification MUST send a `expo-expect-signature` header to indicate that it expects the conformant server to include the `expo-signature` header in the manifest response. `expo-expect-signature` is an [Expo SFV](expo-sfv-0.mdx) dictionary which MAY contain any of the following key value pairs:
 
@@ -73,14 +75,14 @@ expo-runtime-version: *
 expo-expect-signature: sig, keyid="root", alg="rsa-v1_5-sha256"
 ```
 
-## Update Response
+## Response
 
-A conformant server MUST return a response structured in at least one of two ways. A conformant server MAY support either or both response structures, and when an unsupported response structure is requested the server SHOULD respond with an HTTP `406` error status. A server that wishes to respond with an incompatible response for the requested protocol version SHOULD respond with an HTTP `404` error status instead.
+A conformant server MUST return a response structured in at least one of the two following response structures, MAY support either or both response structures, and when an unsupported response structure is requested the server SHOULD respond with an HTTP `415` error status. A server that wishes to respond with an incompatible response for the requested protocol version SHOULD respond with an HTTP `404` error status instead.
 
-- For a response with `content-type: application/json` or `content-type: application/expo+json`, the [common response headers](#common-response-headers) and  [other response headers](#other-response-headers) MUST be sent in the response headers and the [manifest body](#manifest-body) MUST be sent in the response body. This format of response does not support update parts and therefore does not support _directive_, and SHOULD respond with an HTTP `404` error status when the most recent update to be served is not a _manifest_.
+- For a response with `content-type: application/json` or `content-type: application/expo+json`, the [common response headers](#common-response-headers) and [other response headers](#other-response-headers) MUST be sent in the response headers and the [manifest body](#manifest-body) MUST be sent in the response body. This format of response does not support multiple response parts and therefore does not support _directive_, and SHOULD respond with an HTTP `415` error status when the most recent response to be served is not an _update_.
 - For a response with `content-type: multipart/mixed`, the response MUST be structured as specified in the [multipart response](#multipart-response) section.
 
-The choice of update and headers are dependent on the values of the request headers. A conformant server MUST respond with the most recent update, ordered by creation time, satisfying all parameters and constraints imposed by the [request headers](#update-request). The server MAY use any properties of the request like its headers and source IP address to choose amongst several updates that all satisfy the request's constraints.
+The choice of update and headers are dependent on the values of the request headers. A conformant server MUST respond with the most recent update, ordered by creation time, satisfying all parameters and constraints imposed by the [request headers](#request). The server MAY use any properties of the request like its headers and source IP address to choose amongst several updates that all satisfy the request's constraints.
 
 ### Common Response Headers
 
@@ -96,9 +98,9 @@ content-type: *
 - `expo-protocol-version` describes the version of the protocol defined in this spec and MUST be `1`.
 - `expo-sfv-version` MUST be `0`.
 - `expo-manifest-filters` is an [Expo SFV](expo-sfv-0.mdx) dictionary. It is used to filter updates stored by the client library by the `metadata` attribute found in the [manifest](#manifest-body). If a field is mentioned in the filter, the corresponding field in the metadata must either be missing or equal for the update to be included. The client library MUST store the manifest filters until it is overwritten by a newer response.
-- `expo-server-defined-headers` is an [Expo SFV](expo-sfv-0.mdx) dictionary. It defines headers that a client library MUST store until overwritten by a newer dictionary, and they MUST be included in every subsequent [update request](#update-request).
+- `expo-server-defined-headers` is an [Expo SFV](expo-sfv-0.mdx) dictionary. It defines headers that a client library MUST store until overwritten by a newer dictionary, and they MUST be included in every subsequent [update request](#request).
 - `cache-control` MUST be set to an appropriately short period of time. A value of `cache-control: private, max-age=0` is recommended to ensure the newest manifest is returned. Setting longer cache ages could result in stale updates.
-- `content-type` MUST be determined by _proactive negotiation_ as defined in [RFC 7231](https://tools.ietf.org/html/rfc7231#section-3.4.1). Since the client library is [required](#update-request) to send an `accept` header with each manifest request, this will always be either `application/expo+json`, `application/json`; otherwise the request would return a `406` error.
+- `content-type` MUST be determined by _proactive negotiation_ as defined in [RFC 7231](https://tools.ietf.org/html/rfc7231#section-3.4.1). Since the client library is [required](#request) to send an `accept` header with each manifest request, this will always be either `application/expo+json`, `application/json`; otherwise the request would return a `406` error.
 
 ### Other Response Headers
 
@@ -118,6 +120,8 @@ A update response of this format is defined by the `multipart/mixed` MIME type a
 Headers for this response format are the [common response headers](#common-response-headers), with the following exceptions:
 
 - `content-type` SHOULD have a `multipart/mixed` value as defined by [RFC 2046](https://tools.ietf.org/html/rfc2046#section-5.1)
+
+Part order is not strict. A multipart response with no parts should be considered a no-op (no updates or directives available), though headers SHOULD be sent nevertheless.
 
 Each part is defined as follows:
 
@@ -208,16 +212,17 @@ Defined as JSON conforming to both the following `Directive` definition expresse
 
 ```typescript
 type Directive = {
-  directiveType: string;
-  directivePayload?: { [key: string]: any };
-  [key: string]: any;
+  type: string;
+  payload?: { [key: string]: any };
+  extra?: { [key: string]: any };
 };
 ```
 
-- `directiveType`: The type of directive directive.
-- `directivePayload`: MAY contain any extra information specific to the `directiveType`.
+- `type`: The type of directive directive.
+- `payload`: MAY contain any extra information specific to the `type`.
+- `extra`: For storage of optional "extra" information such as third-party information. For example, if the update is hosted on Expo Application Services (EAS), the EAS project ID may be included.
 
-A conformant client library and server SHOULD specify and implement directive types specific to the needs of the application. For example, Expo Application Services makes use of two directive types: `noUpdateAvailable` (directs the expo-updates library to proceed as normal) and `rollbackToEmbedded` (directs the expo-updates library to use the update embedded in the host application instead of any other downloaded updates).
+A conformant client library and server MAY specify and implement directive types specific to the needs of the application. For example, Expo Application Services makes use of one type thus far, `rollBackToEmbedded`, which directs the expo-updates library to use the update embedded in the host application instead of any other downloaded updates.
 
 ## Asset Request
 
@@ -259,7 +264,3 @@ Assets SHOULD be capable of being served with [Gzip](https://www.gnu.org/softwar
 ## Code Signing
 
 Expo Updates supports code signing the manifest and directive bodies. Code signing the manifest also transitively signs the assets since their hashes are present in the manifest and verified by a conformant client. A conformant client MAY request the manifest or directive be signed using a private key, and then MUST verify the signature of the manifest or directive using the corresponding code signing certificate before it is used or any corresponding manifest assets are downloaded. The client MUST verify that the signing certificate is either a self-signed, trusted root certificate or is in a certificate chain signed by a trusted root certificate. In either case, the root certificate MUST be embedded in the application or device's operating system.
-
-## Client Library
-
-See the [reference client library](https://github.com/expo/expo/tree/main/packages/expo-updates)
