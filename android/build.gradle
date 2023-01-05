@@ -3,7 +3,7 @@
 buildscript {
   ext {
     minSdkVersion = 21
-    targetSdkVersion = 31
+    targetSdkVersion = 33
     compileSdkVersion = 33
 
     dbFlowVersion = '4.2.4'

@@ -7,8 +7,8 @@ buildscript {
         buildToolsVersion = "31.0.0"
         gradlePluginVersion = '7.2.1'
         minSdkVersion = 21
-        compileSdkVersion = 31
-        targetSdkVersion = 31
+        compileSdkVersion = 33
+        targetSdkVersion = 33
         // Some dependencies still expect supportLibVersion to be defined
         supportLibVersion = "29.0.0"
         kotlinVersion = '1.6.10'
