@@ -5,6 +5,7 @@ import { ChangelogEntry, UNPUBLISHED_VERSION_NAME } from '../../Changelogs';
 import { EXPO_DIR } from '../../Constants';
 import { link } from '../../Formatter';
 import Git from '../../Git';
+import * as GitHub from '../../GitHub';
 import { dispatchWorkflowEventAsync, getClosedIssuesAsync } from '../../GitHubActions';
 import logger from '../../Logger';
 import { Package } from '../../Packages';
@@ -19,10 +20,51 @@ type CommentRowObject = {
   pullRequests: number[];
 };
 
+const GITHUB_LABEL_PUBLISHED = 'published';
+
 /**
  * Dispatches GitHub Actions workflow that adds comments to the issues
  * that were closed by pull requests mentioned in the changelog changes.
  */
+export const updatePullRequestsAndIssues = new Task<TaskArgs>(
+  {
+    name: 'updatePullRequestsAndIssues',
+    dependsOn: [selectPackagesToPublish],
+  },
+  async (parcels: Parcel[], options: CommandOptions) => {
+    logger.info(`\n🐙 Adding "${GITHUB_LABEL_PUBLISHED}" label to pull requests`);
+
+    const pullRequestIds: number[] = [];
+
+    // Find all pull requests mentioned in changelogs
+    for (const { state } of parcels) {
+      const versionChanges = state.changelogChanges?.versions[UNPUBLISHED_VERSION_NAME];
+
+      if (!versionChanges) {
+        continue;
+      }
+      for (const entry of Object.values(versionChanges).flat()) {
+        const { pullRequests } = entry;
+        if (pullRequests && pullRequests.length > 0) {
+          pullRequestIds.push(...pullRequests);
+        }
+      }
+    }
+
+    // Add a label to all pull requests
+    for (const pullRequestId of new Set(pullRequestIds)) {
+      const pr = await GitHub.getPullRequestAsync(pullRequestId);
+      const publishedLabel = pr.labels.find((label) => label.name === GITHUB_LABEL_PUBLISHED);
+
+      if (!publishedLabel) {
+        logger.info(`- ${linkToPullRequest(pr)}: ${chalk.bold(pr.title)}`);
+
+        await GitHub.addIssueLabelsAsync(pullRequestId, [GITHUB_LABEL_PUBLISHED]);
+      }
+    }
+  }
+);
+
 export const commentOnIssuesTask = new Task<TaskArgs>(
   {
     name: 'commentOnIssuesTask',
@@ -153,6 +195,10 @@ function linksToClosedIssues(issues: number[]): string {
   return issues
     .map((issue) => link(chalk.blue('#' + issue), `https://github.com/expo/expo/issues/${issue}`))
     .join(', ');
+}
+
+function linkToPullRequest(pr: GitHub.PullRequest): string {
+  return link(chalk.blue('#' + pr.number), pr.html_url);
 }
 
 /**

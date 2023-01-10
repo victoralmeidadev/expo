@@ -7,7 +7,6 @@ import { checkEnvironmentTask } from './checkEnvironmentTask';
 import { checkPackagesIntegrity } from './checkPackagesIntegrity';
 import { checkRepositoryStatus } from './checkRepositoryStatus';
 import { cleanPrebuildsTask } from './cleanPrebuildsTask';
-import { commentOnIssuesTask } from './commentOnIssuesTask';
 import { commitStagedChanges } from './commitStagedChanges';
 import { cutOffChangelogs } from './cutOffChangelogs';
 import { grantTeamAccessToPackages } from './grantTeamAccessToPackages';
@@ -21,6 +20,7 @@ import { updateBundledNativeModulesFile } from './updateBundledNativeModulesFile
 import { updateIosProjects } from './updateIosProjects';
 import { updateModuleTemplate } from './updateModuleTemplate';
 import { updatePackageVersions } from './updatePackageVersions';
+import { updatePullRequestsAndIssues } from './updatePullRequestsAndIssues';
 import { updateWorkspaceProjects } from './updateWorkspaceProjects';
 
 const { cyan, yellow } = chalk;
@@ -50,7 +50,7 @@ export const publishPackagesPipeline = new Task<TaskArgs>(
       publishPackages,
       cleanPrebuildsTask,
       grantTeamAccessToPackages,
-      commentOnIssuesTask,
+      updatePullRequestsAndIssues,
     ],
   },
   async (parcels: Parcel[], options: CommandOptions) => {
